@@ -187,6 +187,7 @@ echo "=== Configuration Summary ==="
 echo "  Current IP:    $CURRENT_IP"
 echo "  New IP:        $NEW_IP"
 echo "  Gateway:       $GATEWAY"
+echo "  DHCP pool:     10.${SECOND}.${THIRD}.200 - 10.${SECOND}.${THIRD}.219"
 echo "  Hostname:      $HOSTNAME"
 echo "  Timezone:      $TZNAME"
 echo "  AP SSID:       $AP_SSID"
@@ -223,6 +224,10 @@ uci set network.lan.ipaddr='$NEW_IP'
 uci del dhcp.lan.dhcp_option 2>/dev/null || true
 uci add_list dhcp.lan.dhcp_option='3,$GATEWAY'
 uci add_list dhcp.lan.dhcp_option='6,$GATEWAY'
+
+# DHCP pool - FIRST convention is 10.TE.AM.200-219
+uci set dhcp.lan.start='200'
+uci set dhcp.lan.limit='20'
 
 # Radios: 5GHz (radio0) is the field uplink, 2.4GHz (radio1) is the local AP
 uci set wireless.radio0.channel='36'

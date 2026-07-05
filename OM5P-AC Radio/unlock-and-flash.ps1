@@ -5,7 +5,7 @@
 # Place in same directory as:
 #   - fwupgrade.cfg
 #   - fwupgrade.cfg.sig
-#   - openwrt-24.10.3-ath79-generic-openmesh_om5p-ac-v2-squashfs-sysupgrade.bin
+#   - openwrt-25.12.5-ath79-generic-openmesh_om5p-ac-v2-squashfs-sysupgrade.bin
 #   - ap51-flash-2025.0-i686-npcap.exe
 #   - tftpd64.exe (portable Tftpd64, https://github.com/PJO2/tftpd64)
 #
@@ -16,7 +16,7 @@
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$DefaultOpenWrtBin = "openwrt-24.10.3-ath79-generic-openmesh_om5p-ac-v2-squashfs-sysupgrade.bin"
+$DefaultOpenWrtBin = "openwrt-25.12.5-ath79-generic-openmesh_om5p-ac-v2-squashfs-sysupgrade.bin"
 $DefaultAp51Bin = "ap51-flash-2025.0-i686-npcap.exe"
 $RadioIpUnlock = "192.168.100.8"
 $RadioIpDefault = "192.168.1.1"

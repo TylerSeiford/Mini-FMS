@@ -149,8 +149,9 @@ radio is just a plain OpenWrt device; you're free to configure it by hand
 ### What it configures
 
 - **5GHz radio (`radio0`)** — WDS client (`sta` mode) uplink to the field
-  AP's SSID (e.g. `2846-Field`), channel 36 / VHT80, WPA2-PSK with the
-  supplied field PPSK.
+  AP's SSID (e.g. `2846-Field`), auto channel / VHT80, WPA2-PSK with the
+  supplied field PPSK. Channel is auto (not fixed) so it can associate
+  regardless of whatever channel the field AP actually uses.
 - **2.4GHz radio (`radio1`)** — local AP, auto channel / HT20, SAE-mixed
   (WPA3/WPA2) with the supplied local key. The 2.4GHz AP exists so a driver
   station laptop can connect and drive the robot directly over Wi-Fi when
@@ -167,6 +168,10 @@ radio is just a plain OpenWrt device; you're free to configure it by hand
   and forwarding rules are removed, and the `lan` zone is set fully
   permissive (accept/accept/accept). All interfaces end up bridged onto one
   flat subnet with no NAT, matching the real FRC field network.
+- **Ethernet ports** — both physical ports are bridged into `br-lan`. Stock
+  config only puts the LAN port (`eth1`) in the bridge and leaves the WAN
+  port (`eth0`) separate; since the `wan` firewall zone is removed anyway,
+  `eth0` is added into `br-lan` too so either port works identically.
 - **Hostname and timezone** — timezone auto-detected from the host OS
   (Windows via `tzutil`, or `/etc/localtime` on Linux) with a North
   American IANA zone table; hostname defaults to `OM5P-AC_<AP SSID>`.
@@ -198,8 +203,9 @@ for the full convention this replicates.
 4. Review the configuration summary and confirm with `yes`.
 5. The script SSHes in (host key checking disabled — these radios get
    re-imaged often and reuse IPs, so a fixed known-hosts entry isn't useful),
-   applies the `uci` changes, commits, and restarts networking/wireless/
-   firewall.
+   applies the `uci` changes, commits, and reboots the radio to apply them
+   cleanly (a live service restart over the same session/interface being
+   reconfigured is unreliable).
 6. The radio comes up at its new `10.TE.AM.1` address. If you were connected
    via the radio's LAN port, you'll lose connectivity to it momentarily
    during the restart — reconnect at the new IP.
@@ -216,7 +222,7 @@ for the full convention this replicates.
 - **Auto-detected gateway/timezone is wrong.** These are only defaults —
   just type the correct value at the prompt.
 - **Lose connectivity partway through and can't tell if it applied.** The
-  `uci commit` and service restarts happen before the connection drops, so
+  `uci commit` and reboot are triggered before the connection drops, so
   the config did apply — reconnect at the new `10.TE.AM.1` address (or the
   radio's previous IP if something failed before commit) to confirm.
 - **Radio isn't reachable at the new IP afterward.** Confirm your laptop's

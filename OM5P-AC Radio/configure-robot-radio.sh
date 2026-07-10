@@ -217,8 +217,11 @@ uci set system.@system[0].hostname='$HOSTNAME'
 uci set system.@system[0].zonename='$TZNAME'
 uci set system.@system[0].timezone='$POSIX_TZ'
 
-# LAN IP
-uci set network.lan.ipaddr='$NEW_IP'
+# LAN IP - must include the /24 prefix and be set as a list entry (not a
+# bare "uci set" scalar) to match how netifd's static proto handler expects
+# it on 25.12; a bare IP with no prefix silently fails to apply.
+uci -q delete network.lan.ipaddr 2>/dev/null || true
+uci add_list network.lan.ipaddr='$NEW_IP/24'
 
 # DHCP options - gateway and DNS
 uci del dhcp.lan.dhcp_option 2>/dev/null || true
@@ -230,7 +233,9 @@ uci set dhcp.lan.start='200'
 uci set dhcp.lan.limit='20'
 
 # Radios: 5GHz (radio0) is the field uplink, 2.4GHz (radio1) is the local AP
-uci set wireless.radio0.channel='36'
+# radio0 channel is 'auto' (not fixed) since it must scan for and follow
+# whatever channel the field AP it uplinks to is actually using.
+uci set wireless.radio0.channel='auto'
 uci set wireless.radio0.htmode='VHT80'
 uci set wireless.radio0.disabled='0'
 uci set wireless.radio1.channel='auto'
@@ -241,11 +246,18 @@ uci set wireless.radio1.disabled='0'
 uci -q delete wireless.default_radio0
 
 # 2.4GHz local AP (repurpose stock default AP interface)
+# disabled='0' on the *interface* itself, not just the radio device - stock
+# config ships this interface disabled independent of the radio's own state.
+uci set wireless.default_radio1.disabled='0'
 uci set wireless.default_radio1.mode='ap'
 uci set wireless.default_radio1.network='lan'
 uci set wireless.default_radio1.ssid='$AP_SSID'
 uci set wireless.default_radio1.encryption='sae-mixed'
 uci set wireless.default_radio1.key='$AP_KEY'
+uci set wireless.default_radio1.wds='1'
+# OCV disabled - some SAE clients (e.g. newer Android/iOS) get rejected by
+# Operating Channel Validation enforcement under current wpad/hostapd.
+uci set wireless.default_radio1.ocv='0'
 
 # 5GHz field uplink (STA) - create new interface
 uci set wireless.wifinet0='wifi-iface'
@@ -275,16 +287,18 @@ uci set firewall.@zone[0].forward='ACCEPT'
 # Commit everything
 uci commit
 
-echo "Configuration applied. Restarting services..."
-/etc/init.d/system reload
-service network restart &
-service firewall restart &
-wifi reload &
+echo "Configuration applied. Rebooting to apply cleanly..."
+# A live "service network restart" over the same SSH session/interface being
+# reconfigured is unreliable - netifd can end up with a stale address on
+# br-lan (uci committed but never actually applied to the kernel interface).
+# A full reboot re-applies /etc/config/* from scratch and is the reliable path.
+reboot &
 
-echo "Done! Radio will now be at $NEW_IP"
+echo "Done! Radio is rebooting and will come up at $NEW_IP"
 EOF
 
 echo ""
 echo "=== Complete ==="
-echo "Radio is reconfiguring. Reconnect to it at $NEW_IP"
+echo "Radio is rebooting to apply the new configuration (allow ~60-90s)."
+echo "Reconnect to it at $NEW_IP once it's back up."
 echo "Note: if connected via the radio's LAN port, you will lose connectivity momentarily."

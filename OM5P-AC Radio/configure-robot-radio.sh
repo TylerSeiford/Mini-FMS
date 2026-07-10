@@ -223,6 +223,21 @@ uci set system.@system[0].timezone='$POSIX_TZ'
 uci -q delete network.lan.ipaddr 2>/dev/null || true
 uci add_list network.lan.ipaddr='$NEW_IP/24'
 
+# Bridge both physical ports into br-lan. Stock config only puts eth1 (LAN)
+# in the bridge and leaves eth0 (WAN) as a separate, now-unused interface
+# since the wan firewall zone is dropped below - add eth0 into br-lan too so
+# either port works identically for LAN/management or field uplink cabling.
+i=0
+while DNAME=\$(uci -q get network.@device[\$i].name); do
+    if [ "\$DNAME" = "br-lan" ]; then
+        uci -q delete network.@device[\$i].ports 2>/dev/null || true
+        uci add_list network.@device[\$i].ports='eth0'
+        uci add_list network.@device[\$i].ports='eth1'
+        break
+    fi
+    i=\$((i+1))
+done
+
 # DHCP options - gateway and DNS
 uci del dhcp.lan.dhcp_option 2>/dev/null || true
 uci add_list dhcp.lan.dhcp_option='3,$GATEWAY'
